@@ -1,0 +1,13 @@
+[Unit]
+Description=IR Gesture Detection System
+After=network.target
+
+[Service]
+ExecStart=/home/pi/WandGestureDetector/.venv/bin/python /home/pi/WandGestureDetector/main.py
+WorkingDirectory=/home/pi/WandGestureDetector
+Restart=on-failure
+User=pi
+SupplementaryGroups=video gpio audio
+
+[Install]
+WantedBy=multi-user.target

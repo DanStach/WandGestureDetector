@@ -27,11 +27,11 @@ curl http://localhost:8000/api/actions
 curl http://localhost:8000/api/stats
 ```
 
-## On the Raspberry Pi (headless, Raspberry Pi OS Lite)
+## On the Raspberry Pi (headless, Raspberry Pi OS Lite 32-bit, Trixie)
 
 ```bash
-pip3 install -r requirements.txt -r requirements-rpi.txt
-python3 main.py
+./scripts/setup-pi.sh   # apt packages + venv
+./run.sh
 ```
 
 See `CLAUDE.md` → **Setup & Running** for the `systemd` unit to run this on boot.

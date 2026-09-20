@@ -17,14 +17,14 @@
 
 **Hardware**:
 - Raspberry Pi 3B+
-- OS: Raspberry Pi OS Lite (64-bit) — headless, no desktop environment
+- OS: Raspberry Pi OS Lite (32-bit armhf, Debian 13 "Trixie") — headless, no desktop environment
 - Arducam IR Camera (5MP, OV5647, 1080p)
 - IR reflector-tipped wand (retroreflective material)
 
 **Deployment**:
 - RPi GPIO library (servo, LED, relay control)
-- aplay/paplay (audio)
-- omxplayer/ffplay (HDMI video)
+- mpg123/ffplay (mp3 audio; `aplay` is WAV-only)
+- ffplay/mpv (HDMI video; omxplayer does not exist on Trixie)
 
 ---
 
@@ -284,26 +284,31 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### On Raspberry Pi (OS Lite, headless)
+### On Raspberry Pi (OS Lite 32-bit, Trixie, headless)
+
+Trixie marks system Python as externally managed (PEP 668), so `pip3 install` system-wide fails. Take the hardware-bound libs (picamera2, OpenCV, numpy, GPIO) from apt and use a venv with `--system-site-packages` for the rest. One-shot script: `scripts/setup-pi.sh`.
 
 ```bash
 # SSH into RPi (Lite has no desktop — SSH/CLI only)
-ssh pi@<rpi-ip>
+ssh <user>@<rpi-ip>
 
-# Clone repo
-git clone <repo-url>
-cd ir-gesture-system
+sudo apt update && sudo apt full-upgrade -y
+sudo apt install -y git python3-venv python3-picamera2 python3-opencv python3-numpy \
+  python3-rpi-lgpio alsa-utils ffmpeg mpv mpg123
 
-# Install deps
-pip3 install -r requirements.txt
+git clone <repo-url> ~/WandGestureDetector && cd ~/WandGestureDetector
+python3 -m venv --system-site-packages .venv
+source .venv/bin/activate
+pip install fastapi "uvicorn[standard]" pydantic
 
-# Ensure camera is enabled (libcamera stack on Bullseye+ Lite)
-sudo raspi-config  # Interface Options → Legacy Camera: disabled, Camera: enabled
-libcamera-hello --list-cameras  # verify camera is detected
+# Verify camera (Trixie uses rpicam-*, not libcamera-*; power off before seating the ribbon)
+rpicam-hello --list-cameras
 
 # Run (detection + web server)
-python3 main.py
+./run.sh
 ```
+
+Do NOT `pip install -r requirements.txt` on the Pi: it pins `opencv-python-headless`/`numpy`, which would shadow the apt builds.
 
 No local display is available, so all monitoring happens remotely:
 - Web UI / API at `http://<rpi-ip>:8000` (stats, gesture/action CRUD)
@@ -311,23 +316,14 @@ No local display is available, so all monitoring happens remotely:
 
 For a permanent headless deployment, run via `systemd` (starts on boot without a login session) rather than a shell left open over SSH:
 
-```ini
-# /etc/systemd/system/ir-gesture.service
-[Unit]
-Description=IR Gesture Detection System
-After=network.target
+A ready-made unit lives in `deploy/ir-gesture.service` (edit `User`/paths if your account isn't `pi`):
 
-[Service]
-ExecStart=/usr/bin/python3 /home/pi/ir-gesture-system/main.py
-WorkingDirectory=/home/pi/ir-gesture-system
-Restart=on-failure
-User=pi
-
-[Install]
-WantedBy=multi-user.target
+```bash
+sudo cp deploy/ir-gesture.service /etc/systemd/system/
 ```
 
 ```bash
+sudo systemctl daemon-reload
 sudo systemctl enable --now ir-gesture.service
 sudo journalctl -u ir-gesture.service -f
 ```
