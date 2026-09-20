@@ -1,0 +1,60 @@
+{
+  "wand_spin": {
+    "id": "wand_spin",
+    "name": "Wand Spin",
+    "type": "circle",
+    "enabled": true,
+    "min_distance": 60.0,
+    "timeout_ms": 3000,
+    "min_speed": 5.0,
+    "max_speed": 30.0,
+    "min_rotations": 1.0,
+    "min_radius": 25.0,
+    "circularity_tolerance": 0.3
+  },
+  "quick_flick": {
+    "id": "quick_flick",
+    "name": "Quick Flick",
+    "type": "line",
+    "enabled": true,
+    "min_distance": 60.0,
+    "timeout_ms": 2000,
+    "min_speed": 15.0,
+    "max_deviation": 15.0,
+    "min_linearity": 0.75
+  },
+  "hold_still": {
+    "id": "hold_still",
+    "name": "Hold Still",
+    "type": "dwell",
+    "enabled": true,
+    "min_distance": 0.0,
+    "timeout_ms": 2000,
+    "max_movement": 10.0,
+    "min_duration_ms": 800
+  },
+  "infinity_loop": {
+    "id": "infinity_loop",
+    "name": "Infinity Loop",
+    "type": "figure8",
+    "enabled": true,
+    "min_distance": 100.0,
+    "timeout_ms": 4000,
+    "min_speed": 5.0,
+    "max_speed": 35.0,
+    "min_rotations": 2.0,
+    "min_radius": 20.0,
+    "circularity_tolerance": 0.4
+  },
+  "lightning_bolt": {
+    "id": "lightning_bolt",
+    "name": "Lightning Bolt",
+    "type": "zigzag",
+    "enabled": true,
+    "min_distance": 80.0,
+    "timeout_ms": 2000,
+    "min_speed": 10.0,
+    "min_direction_changes": 3,
+    "min_turn_angle_deg": 45.0
+  }
+}

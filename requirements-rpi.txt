@@ -1,0 +1,4 @@
+# Raspberry Pi hardware-specific dependencies -- install only on-device, alongside requirements.txt:
+#   pip3 install -r requirements.txt -r requirements-rpi.txt
+RPi.GPIO>=0.7.1
+picamera2>=0.3.12

@@ -1,0 +1,14 @@
+{
+  "wand_spin": {
+    "gesture_id": "wand_spin",
+    "action_type": "mp3",
+    "target": "/home/pi/sounds/spell_cast.mp3",
+    "duration_ms": null
+  },
+  "quick_flick": {
+    "gesture_id": "quick_flick",
+    "action_type": "gpio",
+    "target": "12:pwm:50:75",
+    "duration_ms": 1500
+  }
+}
