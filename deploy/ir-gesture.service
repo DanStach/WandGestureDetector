@@ -3,10 +3,10 @@ Description=IR Gesture Detection System
 After=network.target
 
 [Service]
-ExecStart=/home/pi/WandGestureDetector/.venv/bin/python /home/pi/WandGestureDetector/main.py
-WorkingDirectory=/home/pi/WandGestureDetector
+ExecStart=/home/raspi/WandGestureDetector/.venv/bin/python /home/raspi/WandGestureDetector/main.py
+WorkingDirectory=/home/raspi/WandGestureDetector
 Restart=on-failure
-User=pi
+User=raspi
 SupplementaryGroups=video gpio audio
 
 [Install]
