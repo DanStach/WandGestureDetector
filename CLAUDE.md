@@ -17,6 +17,7 @@
 
 **Hardware**:
 - Raspberry Pi 3B+
+- OS: Raspberry Pi OS Lite (64-bit) — headless, no desktop environment
 - Arducam IR Camera (5MP, OV5647, 1080p)
 - IR reflector-tipped wand (retroreflective material)
 
@@ -283,10 +284,10 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### On Raspberry Pi
+### On Raspberry Pi (OS Lite, headless)
 
 ```bash
-# SSH into RPi
+# SSH into RPi (Lite has no desktop — SSH/CLI only)
 ssh pi@<rpi-ip>
 
 # Clone repo
@@ -296,14 +297,40 @@ cd ir-gesture-system
 # Install deps
 pip3 install -r requirements.txt
 
-# Ensure camera is enabled
-sudo raspi-config  # Enable camera module
+# Ensure camera is enabled (libcamera stack on Bullseye+ Lite)
+sudo raspi-config  # Interface Options → Legacy Camera: disabled, Camera: enabled
+libcamera-hello --list-cameras  # verify camera is detected
 
 # Run (detection + web server)
 python3 main.py
 ```
 
-Web UI available at `http://<rpi-ip>:8000`
+No local display is available, so all monitoring happens remotely:
+- Web UI / API at `http://<rpi-ip>:8000` (stats, gesture/action CRUD)
+- SSH for logs (`journalctl` once running as a service, or `detection.log`)
+
+For a permanent headless deployment, run via `systemd` (starts on boot without a login session) rather than a shell left open over SSH:
+
+```ini
+# /etc/systemd/system/ir-gesture.service
+[Unit]
+Description=IR Gesture Detection System
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/pi/ir-gesture-system/main.py
+WorkingDirectory=/home/pi/ir-gesture-system
+Restart=on-failure
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now ir-gesture.service
+sudo journalctl -u ir-gesture.service -f
+```
 
 ---
 
@@ -376,6 +403,7 @@ class MockDetector:
 - **Latency**: ~100ms from gesture end to action start (acceptable for UI feedback)
 - **Single wand**: Current code tracks one reflector; multi-wand requires modification
 - **No internet**: System runs fully local (optional webhooks for integrations)
+- **Headless OS**: Raspberry Pi OS Lite has no desktop/X11 — no `cv2.imshow()` debug windows on-device. Use the FastAPI `/api/stats` endpoint (and optionally a saved-frame/MJPEG debug endpoint) for live visualization instead. Use `picamera2` (libcamera-based), not the legacy `picamera`/`PiRGBArray` API, since Lite images since Bullseye ship with libcamera. Run the system as a `systemd` service (not a desktop autostart) so it starts headless on boot.
 
 ---
 
