@@ -23,7 +23,7 @@
 
 **Deployment**:
 - RPi GPIO library (servo, LED, relay control)
-- mpg123/ffplay (mp3 audio; `aplay` is WAV-only)
+- mpg123/ffplay (mp3 audio; `aplay`/`paplay` are WAV-only fallbacks)
 - ffplay/mpv (HDMI video; omxplayer does not exist on Trixie)
 
 ---
@@ -140,7 +140,7 @@ ir-gesture-system/
 - Async queue-based action processing
 - Prevents blocking detection loop
 - Supports:
-  - **MP3**: `aplay` or `paplay`
+  - **MP3**: `mpg123` (preferred), `ffplay`, or `afplay` (macOS dev); `aplay`/`paplay` only for `.wav`
   - **Video**: `omxplayer` (RPi HW accel) or `ffplay`
   - **GPIO**: Simple toggles or PWM (servo, LED)
   - **Webhook**: HTTP POST via curl

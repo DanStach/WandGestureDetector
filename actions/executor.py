@@ -137,16 +137,38 @@ class ActionExecutor:
 
     # -- MP3 / video --
 
+    @staticmethod
+    def _audio_command(target: str) -> Optional[List[str]]:
+        """Pick a player that can decode `target`; aplay/paplay are only used for .wav files."""
+        players = ["mpg123", "ffplay", "afplay"]
+        if Path(target).suffix.lower() == ".wav":
+            players = ["aplay", "paplay"] + players
+        args_for = {
+            "mpg123": ["-q"],
+            "ffplay": ["-nodisp", "-autoexit", "-loglevel", "quiet"],
+        }
+        for player in players:
+            if shutil.which(player):
+                return [player, *args_for.get(player, []), target]
+        return None
+
     async def _play_audio(self, target: str) -> None:
-        player = next((p for p in ("aplay", "paplay", "afplay", "ffplay") if shutil.which(p)), None)
-        if not player:
-            logger.warning("No audio player on PATH (aplay/paplay/afplay/ffplay) - skipping mp3 action for %s", target)
+        args = self._audio_command(target)
+        if not args:
+            logger.warning(
+                "No suitable audio player on PATH (mpg123/ffplay/afplay for mp3; aplay/paplay for wav) - skipping audio action for %s",
+                target,
+            )
             return
-        args = [player, "-nodisp", "-autoexit", target] if player == "ffplay" else [player, target]
         process = await asyncio.create_subprocess_exec(
-            *args, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+            *args, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE
         )
-        await process.wait()
+        _, stderr = await process.communicate()
+        if process.returncode != 0:
+            logger.error(
+                "%s exited with code %s for %s: %s",
+                args[0], process.returncode, target, stderr.decode(errors="replace").strip(),
+            )
 
     async def _play_video(self, target: str, duration_ms: Optional[int]) -> None:
         player = next((p for p in ("omxplayer", "ffplay", "cvlc") if shutil.which(p)), None)
