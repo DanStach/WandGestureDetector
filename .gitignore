@@ -1,0 +1,30 @@
+# Prior-art / reference repos and their notes -- not part of this project
+Examples/
+example_repos_lessons*
+memory/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+build/
+dist/
+
+# Environment / secrets
+.env
+.env.*
+
+# Logs
+*.log
+detection.log
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
