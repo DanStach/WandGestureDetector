@@ -22,10 +22,10 @@ def draw_overlay(frame_bgr: np.ndarray, trajectory: Sequence, point, stats: dict
         cv2.circle(out, (int(point.x), int(point.y)), 14, GREEN, 2)
 
     last = stats.get("last_gesture")
-    temp = stats.get("cpu_temp_c")
+    temp = stats.get("cpu_temp_f")
     lines = [
         f"FPS {stats.get('fps', 0):.0f}   CPU {stats.get('cpu_percent', 0):.0f}%   "
-        f"MEM {stats.get('mem_percent', 0):.0f}%" + (f"   {temp:.0f}C" if temp is not None else ""),
+        f"MEM {stats.get('mem_percent', 0):.0f}%" + (f"   {temp:.0f}F" if temp is not None else ""),
         f"blob: {'yes' if stats.get('blob_detected') else 'no'}   "
         f"tracking: {'yes' if stats.get('tracking') else 'no'}   pts: {stats.get('trajectory_length', 0)}",
         f"gesture: {last['name']} ({last['confidence']:.2f})" if last else "gesture: -",

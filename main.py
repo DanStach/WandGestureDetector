@@ -67,6 +67,7 @@ class GestureDetectionSystem:
             "cpu_percent": 0.0,
             "mem_percent": 0.0,
             "cpu_temp_c": None,
+            "cpu_temp_f": None,
         }
 
         # HDMI preview: WAND_HDMI=1 (set by `./run.sh --hdmi`). Web preview is always available.

@@ -146,6 +146,6 @@ async function tick(){try{const s=await (await fetch('/api/stats')).json();
   bar('cpu',s.cpu_percent);bar('mem',s.mem_percent);
   const g=s.last_gesture?s.last_gesture.name+' ('+s.last_gesture.confidence.toFixed(2)+')':'-';
   document.getElementById('info').textContent='FPS '+s.fps.toFixed(0)+' | blob: '+(s.blob_detected?'yes':'no')+
-   ' | tracking: '+(s.tracking?'yes':'no')+' | last gesture: '+g+(s.cpu_temp_c!=null?' | '+s.cpu_temp_c.toFixed(0)+'\u00b0C':'')}catch(e){}}
+   ' | tracking: '+(s.tracking?'yes':'no')+' | last gesture: '+g+(s.cpu_temp_f!=null?' | '+s.cpu_temp_f.toFixed(0)+'\u00b0F':'')}catch(e){}}
 setInterval(tick,1000);tick();
 </script></body></html>"""

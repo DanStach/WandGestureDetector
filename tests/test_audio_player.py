@@ -31,6 +31,15 @@ class AudioPlayerTests(unittest.IsolatedAsyncioTestCase):
         spawn = await self._play("/s/a.mp3", INSTALLED_ALL)
         self.assertEqual(spawn.call_args.args, ("mpg123", "-q", "/s/a.mp3"))
 
+    async def test_audio_device_env_selects_alsa_output(self):
+        with mock.patch.dict("os.environ", {"WAND_AUDIO_DEVICE": "plughw:CARD=vc4hdmi,DEV=0"}):
+            mp3 = await self._play("/s/a.mp3", INSTALLED_ALL)
+            wav = await self._play("/s/a.wav", INSTALLED_ALL)
+        self.assertEqual(
+            mp3.call_args.args, ("mpg123", "-q", "-a", "plughw:CARD=vc4hdmi,DEV=0", "/s/a.mp3")
+        )
+        self.assertEqual(wav.call_args.args, ("aplay", "-D", "plughw:CARD=vc4hdmi,DEV=0", "/s/a.wav"))
+
     async def test_mp3_falls_back_to_ffplay(self):
         spawn = await self._play("/s/a.mp3", {"aplay", "paplay", "ffplay"})
         self.assertEqual(

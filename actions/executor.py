@@ -6,6 +6,7 @@ import asyncio
 import dataclasses
 import json
 import logging
+import os
 import shutil
 from dataclasses import dataclass
 from enum import Enum
@@ -143,8 +144,12 @@ class ActionExecutor:
         players = ["mpg123", "ffplay", "afplay"]
         if Path(target).suffix.lower() == ".wav":
             players = ["aplay", "paplay"] + players
+        # ALSA device, e.g. "plughw:CARD=vc4hdmi,DEV=0" for HDMI (plughw resamples; HDMI only
+        # accepts 48/24/12 kHz). Unset = system default. ffplay/afplay/paplay ignore it.
+        device = os.environ.get("WAND_AUDIO_DEVICE", "").strip()
         args_for = {
-            "mpg123": ["-q"],
+            "mpg123": ["-q", *(["-a", device] if device else [])],
+            "aplay": ["-D", device] if device else [],
             "ffplay": ["-nodisp", "-autoexit", "-loglevel", "quiet"],
         }
         for player in players:

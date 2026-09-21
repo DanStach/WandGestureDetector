@@ -25,6 +25,8 @@ class BlobPoint:
 class BlobDetectorConfig:
     min_threshold: float = 150
     max_threshold: float = 250
+    # SimpleBlobDetector runs one contour pass per threshold step; 25 -> 4 passes instead of 10.
+    threshold_step: float = 25
     filter_by_color: bool = True
     blob_color: int = 255
     filter_by_circularity: bool = True
@@ -51,6 +53,7 @@ class IRDetector:
         params = cv2.SimpleBlobDetector_Params()
         params.minThreshold = config.min_threshold
         params.maxThreshold = config.max_threshold
+        params.thresholdStep = config.threshold_step
         params.filterByColor = config.filter_by_color
         params.blobColor = config.blob_color
         params.filterByCircularity = config.filter_by_circularity

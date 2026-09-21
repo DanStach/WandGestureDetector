@@ -11,4 +11,7 @@ if [ "${1:-}" = "--hdmi" ]; then
   export WAND_HDMI=1
 fi
 
+# Play action sounds through HDMI (card name is stable; card index is not). Override or set empty to change.
+export WAND_AUDIO_DEVICE="${WAND_AUDIO_DEVICE-plughw:CARD=vc4hdmi,DEV=0}"
+
 exec python3 main.py
