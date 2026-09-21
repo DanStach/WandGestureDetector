@@ -5,15 +5,20 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
+import os
 import time
 from pathlib import Path
 from typing import Optional, Tuple
 
+import cv2
 import numpy as np
 import uvicorn
 
 from actions.executor import ActionExecutor, ActionRegistry
 from camera.detector import BlobTracker, IRDetector
+from display import metrics
+from display.hdmi import HdmiDisplay
+from display.overlay import draw_overlay
 from gestures.classifier import GestureClassifier
 from gestures.patterns import GestureStore
 from web.server import create_app
@@ -26,6 +31,11 @@ CONFIG_DIR = Path(__file__).parent / "config"
 # Minimum pixel movement between consecutive points to count as "activity" rather than
 # jitter; used to let dwell gestures complete without the wand leaving the frame.
 MOVEMENT_EPSILON_PX = 1.5
+
+FRAME_SIZE = (640, 480)
+METRICS_INTERVAL_S = 1.0
+# The web preview is only rendered/JPEG-encoded while someone has requested a frame recently.
+STREAM_IDLE_S = 2.0
 
 
 class GestureDetectionSystem:
@@ -52,12 +62,26 @@ class GestureDetectionSystem:
             "tracking": False,
             "trajectory_length": 0,
             "last_gesture": None,
+            "cpu_percent": 0.0,
+            "mem_percent": 0.0,
+            "cpu_temp_c": None,
         }
 
-        self.app = create_app(self.gesture_store, self.action_registry, self.get_stats)
+        # HDMI preview: WAND_HDMI=1 (set by `./run.sh --hdmi`). Web preview is always available.
+        self._hdmi_enabled = os.environ.get("WAND_HDMI", "0") == "1"
+        self._latest_jpeg: Optional[bytes] = None
+        self._last_stream_request = 0.0
+
+        self.app = create_app(
+            self.gesture_store, self.action_registry, self.get_stats, self.get_preview_jpeg
+        )
 
     def get_stats(self) -> dict:
         return dict(self._stats)
+
+    def get_preview_jpeg(self) -> Optional[bytes]:
+        self._last_stream_request = time.monotonic()
+        return self._latest_jpeg
 
     # -- camera acquisition: picamera2 on the Pi, cv2.VideoCapture for local dev, else None --
 
@@ -83,17 +107,20 @@ class GestureDetectionSystem:
         logger.warning("No camera available - running web server only (see CLAUDE.md local dev mode)")
         return None
 
-    def _read_gray_frame(self, camera: Tuple[str, object]) -> Optional[np.ndarray]:
+    def _read_frame(self, camera: Tuple[str, object]) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        """Returns (bgr, gray). picamera2's "RGB888" is BGR byte order, so it previews correctly as-is."""
         import cv2
 
         kind, handle = camera
         if kind == "picamera2":
             frame = handle.capture_array()
-            return cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+            return frame, cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         ok, frame = handle.read()
         if not ok:
             return None
-        return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        if frame.shape[1] != FRAME_SIZE[0] or frame.shape[0] != FRAME_SIZE[1]:
+            frame = cv2.resize(frame, FRAME_SIZE)
+        return frame, cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     def _close_camera(self, camera: Tuple[str, object]) -> None:
         kind, handle = camera
@@ -133,14 +160,23 @@ class GestureDetectionSystem:
         self._running = True
         last_activity_time = time.monotonic()
         frame_times: list[float] = []
+        last_metrics = 0.0
+
+        hdmi: Optional[HdmiDisplay] = None
+        if self._hdmi_enabled:
+            hdmi = HdmiDisplay(*FRAME_SIZE)
+            if not hdmi.start():
+                hdmi = None
+        metrics.sample()  # prime psutil so the first real reading is meaningful
 
         try:
             while self._running:
                 loop_start = time.monotonic()
-                frame = self._read_gray_frame(camera)
-                if frame is None:
+                frames = self._read_frame(camera)
+                if frames is None:
                     await asyncio.sleep(0.01)
                     continue
+                bgr, frame = frames
 
                 point = self.detector.detect(frame)
                 self._stats["blob_detected"] = point is not None
@@ -163,8 +199,24 @@ class GestureDetectionSystem:
                 frame_times = [t for t in frame_times if loop_start - t < 1.0]
                 self._stats["fps"] = float(len(frame_times))
 
+                if loop_start - last_metrics >= METRICS_INTERVAL_S:
+                    self._stats.update(metrics.sample())
+                    last_metrics = loop_start
+
+                want_web = loop_start - self._last_stream_request < STREAM_IDLE_S
+                if hdmi is not None or want_web:
+                    annotated = draw_overlay(bgr, self.tracker.trajectory, point, self._stats)
+                    if hdmi is not None:
+                        hdmi.show(annotated)
+                    if want_web:
+                        ok, buf = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                        if ok:
+                            self._latest_jpeg = buf.tobytes()
+
                 await asyncio.sleep(0)
         finally:
+            if hdmi is not None:
+                hdmi.stop()
             self._running = False
             self._close_camera(camera)
             await self.executor.stop()

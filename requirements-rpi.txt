@@ -1,3 +1,3 @@
 # Reference only. On Raspberry Pi OS Trixie do NOT pip-install these; use apt instead
 # (see scripts/setup-pi.sh):
-#   python3-picamera2  python3-rpi-lgpio (provides RPi.GPIO)  python3-opencv  python3-numpy
+#   python3-picamera2  python3-rpi-lgpio (provides RPi.GPIO)  python3-opencv  python3-numpy  python3-psutil

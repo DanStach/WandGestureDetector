@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Callable, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 from actions.executor import ActionRegistry, ActionType, GestureAction
@@ -42,6 +44,7 @@ def create_app(
     gesture_store: GestureStore,
     action_registry: ActionRegistry,
     stats_provider: Callable[[], Dict],
+    preview_provider: Optional[Callable[[], Optional[bytes]]] = None,
 ) -> FastAPI:
     app = FastAPI(title="IR Gesture Detection System")
 
@@ -95,4 +98,54 @@ def create_app(
     def get_stats():
         return stats_provider()
 
+    @app.get("/", response_class=HTMLResponse)
+    def index():
+        return PREVIEW_PAGE
+
+    @app.get("/stream.mjpg")
+    async def stream():
+        if preview_provider is None:
+            raise HTTPException(status_code=404, detail="Preview not available")
+
+        async def frames():
+            last = None
+            while True:
+                jpeg = preview_provider()
+                if jpeg is not None and jpeg is not last:
+                    last = jpeg
+                    yield b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + jpeg + b"\r\n"
+                await asyncio.sleep(0.05)
+
+        return StreamingResponse(frames(), media_type="multipart/x-mixed-replace; boundary=frame")
+
     return app
+
+
+PREVIEW_PAGE = """<!doctype html>
+<html><head><meta charset="utf-8"><title>IR Gesture Live</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;background:#111;color:#eee;font:16px system-ui,sans-serif;text-align:center}
+img{max-width:100%;background:#000}
+.bars{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding:12px}
+.bar{width:220px;text-align:left}
+.track{height:14px;background:#333;border-radius:7px;overflow:hidden}
+.fill{height:100%;width:0;background:#3c9;transition:width .3s}
+#info{padding:0 12px 16px;color:#aaa}
+</style></head><body>
+<img src="/stream.mjpg" alt="live camera">
+<div class="bars">
+  <div class="bar">CPU <span id="cpu">-</span>%<div class="track"><div class="fill" id="cpuf"></div></div></div>
+  <div class="bar">Memory <span id="mem">-</span>%<div class="track"><div class="fill" id="memf"></div></div></div>
+</div>
+<div id="info"></div>
+<script>
+function bar(id,v){document.getElementById(id).textContent=v.toFixed(0);
+  const f=document.getElementById(id+'f');f.style.width=v+'%';f.style.background=v>85?'#e55':v>65?'#ec4':'#3c9'}
+async function tick(){try{const s=await (await fetch('/api/stats')).json();
+  bar('cpu',s.cpu_percent);bar('mem',s.mem_percent);
+  const g=s.last_gesture?s.last_gesture.name+' ('+s.last_gesture.confidence.toFixed(2)+')':'-';
+  document.getElementById('info').textContent='FPS '+s.fps.toFixed(0)+' | blob: '+(s.blob_detected?'yes':'no')+
+   ' | tracking: '+(s.tracking?'yes':'no')+' | last gesture: '+g+(s.cpu_temp_c!=null?' | '+s.cpu_temp_c.toFixed(0)+'\u00b0C':'')}catch(e){}}
+setInterval(tick,1000);tick();
+</script></body></html>"""

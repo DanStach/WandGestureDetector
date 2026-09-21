@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 sudo apt update
-sudo apt install -y git python3-venv python3-picamera2 python3-opencv python3-numpy \
+sudo apt install -y git python3-venv python3-picamera2 python3-opencv python3-numpy python3-psutil \
   python3-rpi-lgpio alsa-utils ffmpeg mpv mpg123
 
 # --system-site-packages so the venv sees the apt-provided picamera2/cv2/numpy/GPIO
