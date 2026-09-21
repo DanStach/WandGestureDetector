@@ -12,6 +12,17 @@
     "min_radius": 25.0,
     "circularity_tolerance": 0.3
   },
+  "lumos": {
+    "id": "lumos",
+    "name": "Lumos",
+    "type": "line",
+    "enabled": true,
+    "min_distance": 50.0,
+    "timeout_ms": 1500,
+    "min_speed": 18.0,
+    "max_deviation": 12.0,
+    "min_linearity": 0.8
+  },
   "quick_flick": {
     "id": "quick_flick",
     "name": "Quick Flick",

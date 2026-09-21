@@ -74,6 +74,16 @@ DEFAULT_GESTURES: Dict[str, GesturePattern] = {
         min_distance=60.0,
         timeout_ms=3000,
     ),
+    "lumos": GesturePattern(
+        id="lumos",
+        name="Lumos",
+        type=GestureType.LINE,
+        min_speed=18.0,
+        max_deviation=12.0,
+        min_linearity=0.80,
+        min_distance=50.0,
+        timeout_ms=1500,
+    ),
     "quick_flick": GesturePattern(
         id="quick_flick",
         name="Quick Flick",
