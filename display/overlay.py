@@ -13,7 +13,7 @@ WHITE = (255, 255, 255)
 
 
 def draw_overlay(frame_bgr: np.ndarray, trajectory: Sequence, point, stats: dict) -> np.ndarray:
-    out = frame_bgr.copy()
+    out = frame_bgr  # drawn in place: callers hand over a fresh capture buffer
 
     if len(trajectory) >= 2:
         pts = np.array([(int(p.x), int(p.y)) for p in trajectory], dtype=np.int32)

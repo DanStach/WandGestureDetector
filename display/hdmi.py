@@ -37,7 +37,7 @@ class HdmiDisplay:
             return False
         cmd = [
             mpv, "--no-config", "--vo=drm", "--no-audio", "--no-terminal", "--really-quiet",
-            "--profile=low-latency", "--untimed", "--fullscreen",
+            "--profile=low-latency", "--untimed", "--video-unscaled=yes", "--framedrop=vo",
             "--demuxer=rawvideo",
             f"--demuxer-rawvideo-w={self.width}",
             f"--demuxer-rawvideo-h={self.height}",

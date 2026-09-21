@@ -36,6 +36,8 @@ FRAME_SIZE = (640, 480)
 METRICS_INTERVAL_S = 1.0
 # The web preview is only rendered/JPEG-encoded while someone has requested a frame recently.
 STREAM_IDLE_S = 2.0
+# Send every Nth frame to HDMI (mpv on a Pi 3 is costly); detection still runs on every frame.
+HDMI_EVERY_N = int(os.environ.get("WAND_HDMI_EVERY", "2"))
 
 
 class GestureDetectionSystem:
@@ -161,6 +163,7 @@ class GestureDetectionSystem:
         last_activity_time = time.monotonic()
         frame_times: list[float] = []
         last_metrics = 0.0
+        frame_count = 0
 
         hdmi: Optional[HdmiDisplay] = None
         if self._hdmi_enabled:
@@ -203,10 +206,12 @@ class GestureDetectionSystem:
                     self._stats.update(metrics.sample())
                     last_metrics = loop_start
 
+                frame_count += 1
+                want_hdmi = hdmi is not None and frame_count % HDMI_EVERY_N == 0
                 want_web = loop_start - self._last_stream_request < STREAM_IDLE_S
-                if hdmi is not None or want_web:
+                if want_hdmi or want_web:
                     annotated = draw_overlay(bgr, self.tracker.trajectory, point, self._stats)
-                    if hdmi is not None:
+                    if want_hdmi:
                         hdmi.show(annotated)
                     if want_web:
                         ok, buf = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 70])
