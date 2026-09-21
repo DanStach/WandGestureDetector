@@ -70,7 +70,7 @@ DEFAULT_GESTURES: Dict[str, GesturePattern] = {
         min_radius=25.0,
         circularity_tolerance=0.3,
         min_speed=5.0,
-        max_speed=30.0,
+        max_speed=600.0,
         min_distance=60.0,
         timeout_ms=3000,
     ),

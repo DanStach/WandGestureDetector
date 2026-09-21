@@ -141,6 +141,12 @@ class GestureDetectionSystem:
             return
         self.classifier.patterns = self.gesture_store.list()
         result = self.classifier.classify(trajectory)
+        length = sum(math.hypot(b.x - a.x, b.y - a.y) for a, b in zip(trajectory, trajectory[1:]))
+        duration = max(trajectory[-1].timestamp - trajectory[0].timestamp, 1e-6)
+        logger.info(
+            "Trajectory: %d pts, path %.0f px, %.2f s, %.0f px/s -> %s",
+            len(trajectory), length, duration, length / duration, result.gesture_name if result else "no match",
+        )
         if result is None:
             self._stats["last_gesture"] = None
             return

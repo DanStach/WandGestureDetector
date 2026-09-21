@@ -7,7 +7,7 @@
     "min_distance": 60.0,
     "timeout_ms": 3000,
     "min_speed": 5.0,
-    "max_speed": 30.0,
+    "max_speed": 600.0,
     "min_rotations": 1.0,
     "min_radius": 25.0,
     "circularity_tolerance": 0.3
