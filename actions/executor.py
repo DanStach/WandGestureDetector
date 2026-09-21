@@ -97,6 +97,7 @@ class ActionExecutor:
         self._queue: "asyncio.Queue[GestureAction]" = asyncio.Queue()
         self._worker_task: Optional[asyncio.Task] = None
         self._running = False
+        self._sound_tasks: set = set()
         self._gpio = None  # lazily imported RPi.GPIO module, or False if unavailable
         self._gpio_mode_set = False
         self._pwm_channels: Dict[int, object] = {}
@@ -117,6 +118,12 @@ class ActionExecutor:
 
     def trigger(self, action: GestureAction) -> None:
         self._queue.put_nowait(action)
+
+    def play_sound(self, target: str) -> None:
+        """Fire-and-forget audio that bypasses the action queue (e.g. a beep must not wait behind an MP3)."""
+        task = asyncio.create_task(self._play_audio(target))
+        self._sound_tasks.add(task)
+        task.add_done_callback(self._sound_tasks.discard)
 
     async def _worker(self) -> None:
         while self._running:

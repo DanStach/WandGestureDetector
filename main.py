@@ -27,6 +27,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 logger = logging.getLogger("ir_gesture_system")
 
 CONFIG_DIR = Path(__file__).parent / "config"
+BEEP_SOUND = Path(__file__).parent / "sounds" / "beep.wav"
+# Beep when the blob (re)appears after being gone this long; debounces single-frame dropouts.
+BEEP_MIN_ABSENT_S = 0.5
 
 # Minimum pixel movement between consecutive points to count as "activity" rather than
 # jitter; used to let dwell gestures complete without the wand leaving the frame.
@@ -38,6 +41,8 @@ METRICS_INTERVAL_S = 1.0
 STREAM_IDLE_S = 2.0
 # Send every Nth frame to HDMI (mpv on a Pi 3 is costly); detection still runs on every frame.
 HDMI_EVERY_N = int(os.environ.get("WAND_HDMI_EVERY", "2"))
+# Same for the browser view: JPEG-encoding every frame costs ~10 fps of headroom on a Pi 3.
+WEB_EVERY_N = int(os.environ.get("WAND_WEB_EVERY", "3"))
 
 
 class GestureDetectionSystem:
@@ -171,6 +176,7 @@ class GestureDetectionSystem:
         frame_times: list[float] = []
         last_metrics = 0.0
         frame_count = 0
+        last_blob_time = -BEEP_MIN_ABSENT_S
 
         hdmi: Optional[HdmiDisplay] = None
         if self._hdmi_enabled:
@@ -192,6 +198,9 @@ class GestureDetectionSystem:
                 self._stats["blob_detected"] = point is not None
 
                 if point is not None:
+                    if loop_start - last_blob_time >= BEEP_MIN_ABSENT_S and BEEP_SOUND.exists():
+                        self.executor.play_sound(str(BEEP_SOUND))
+                    last_blob_time = loop_start
                     prev = self.tracker.trajectory[-1] if self.tracker.active and self.tracker.trajectory else None
                     self.tracker.update(point)
                     if prev is None or math.hypot(point.x - prev.x, point.y - prev.y) > MOVEMENT_EPSILON_PX:
@@ -215,7 +224,10 @@ class GestureDetectionSystem:
 
                 frame_count += 1
                 want_hdmi = hdmi is not None and frame_count % HDMI_EVERY_N == 0
-                want_web = loop_start - self._last_stream_request < STREAM_IDLE_S
+                want_web = (
+                    frame_count % WEB_EVERY_N == 0
+                    and loop_start - self._last_stream_request < STREAM_IDLE_S
+                )
                 if want_hdmi or want_web:
                     annotated = draw_overlay(bgr, self.tracker.trajectory, point, self._stats)
                     if want_hdmi:
