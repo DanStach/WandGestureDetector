@@ -2,7 +2,7 @@
   "wand_spin": {
     "gesture_id": "wand_spin",
     "action_type": "mp3",
-    "target": "/home/pi/sounds/spell_cast.mp3",
+    "target": "/home/raspi/WandGestureDetector/sounds/spell_cast.mp3",
     "duration_ms": null
   },
   "quick_flick": {
