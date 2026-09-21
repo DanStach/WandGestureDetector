@@ -10,7 +10,8 @@ sudo apt install -y git python3-venv python3-picamera2 python3-opencv python3-nu
 
 # --system-site-packages so the venv sees the apt-provided picamera2/cv2/numpy/GPIO
 python3 -m venv --system-site-packages .venv
-.venv/bin/pip install fastapi "uvicorn[standard]" pydantic
+# Plain uvicorn: the [standard] extra pulls uvloop, which has no armv7 wheel and needs python3-dev to build
+.venv/bin/pip install fastapi uvicorn pydantic
 
 echo "Camera check:"
 rpicam-hello --list-cameras || echo "No camera detected - check ribbon cable (power off first)."

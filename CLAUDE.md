@@ -299,7 +299,7 @@ sudo apt install -y git python3-venv python3-picamera2 python3-opencv python3-nu
 git clone <repo-url> ~/WandGestureDetector && cd ~/WandGestureDetector
 python3 -m venv --system-site-packages .venv
 source .venv/bin/activate
-pip install fastapi "uvicorn[standard]" pydantic
+pip install fastapi uvicorn pydantic
 
 # Verify camera (Trixie uses rpicam-*, not libcamera-*; power off before seating the ribbon)
 rpicam-hello --list-cameras
